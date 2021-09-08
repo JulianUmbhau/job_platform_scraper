@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import re
 import math
 import pandas as pd
+import selenium
 # %%
 
 
@@ -113,7 +114,23 @@ def load_jobnet_jobs_div(job_title, location, Offset=0):
     soup = BeautifulSoup(page.content, "html.parser")
     return soup
 
+def find_number_of_pages_jobnet(driver, delay):
+    time.sleep(delay)
+    try:
+        WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.CLASS_NAME, 'result-count-label')))
+        antal_jobopslag_text = driver.find_element_by_class_name('result-count-label').text
+    except TimeoutException:
+        print("Loading took too much time!")
+    antal_jobopslag = re.findall(r"(\d+) jobopslag", antal_jobopslag_text)
+    return(antal_jobopslag)
 
+def press_cookie_decline_jobnet(driver, delay):
+    try:
+        myElem = WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.ID, 'declineButton')))
+        driver.find_element_by_css_selector('[id="declineButton"]').click()
+    except TimeoutException:
+        print("Loading took too much time!")
+    return(driver)
 
 
 
@@ -121,40 +138,29 @@ def load_jobnet_jobs_div(job_title, location, Offset=0):
 
 # selenium pga angular js
 from selenium import webdriver
-driver = webdriver.Firefox()
+import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.firefox.options import Options
+
+options = Options()
+options.headless = True
+driver = webdriver.Firefox(options=options)
+
+delay = 1 # seconds
 
 driver.get('https://job.jobnet.dk/CV/FindWork?SearchString=%27Data%2520Science%27%2520OR%2520%27data%2520scientist%27&Region=Hovedstaden%2520og%2520Bornholm&WorkHours=Fuldtid&JobAnnouncementType=Almindelige%2520Vilk%25C3%25A5r&Offset=0&SortValue=CreationDate')
 
-driver.find_element_by_css_selector('[id="declineButton"]').click()
-prices = driver.find_element_by_class_name('result-count-label').text
-for price in prices:
-    print(price.text)
-prices.text
-driver.close()
-
-soup = BeautifulSoup(driver.page_source, 'lxml')
-# %%
 
 
+driver = press_cookie_decline_jobnet(driver, delay)
 
-def find_number_of_pages_jobnet(job_soup): # TODO
-    page_nr = job_soup.find_all("div", class_="result-count-label")
-    for pag in page_nr:
-        print(pag)
+number_of_pages_jobnet = find_number_of_pages_jobnet(driver, delay)
 
-
-
-    page_nr = re.findall(r"(\d+) jobs", str(page_nr))[0]
-    number_of_pages = math.ceil(int(page_nr) / 20)
-    return number_of_pages
-
-
-
-
-# %%
-
-
-
+# henter joboverview-sider
+# henter links til jobs
 
 
 
@@ -165,6 +171,14 @@ def get_job_view(jobkey, proxies):
     page = requests.get(url, proxies=proxies)
     soup = BeautifulSoup(page.content, "html.parser")
     return soup
+
+
+
+driver.close()
+
+
+
+# %%
 
 
 
