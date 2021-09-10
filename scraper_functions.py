@@ -18,7 +18,7 @@ def load_indeed_jobs_div(job_title, location, job_type, start_page="", radius=25
     return soup
 
 
-def find_number_of_pages(job_soup):
+def find_number_of_pages_indeed(job_soup):
     page_nr = job_soup.find("div", id="searchCountPages")
     page_nr = re.findall(r"(\d+) jobs", str(page_nr))[0]
     number_of_pages = math.ceil(int(page_nr) / 50)
@@ -61,7 +61,7 @@ def extract_description_indeed(job_elem):
 
 def scrape_indeed(job_title, location, job_type, proxies): # should be class?
     job_soup = load_indeed_jobs_div(job_title, location, job_type)
-    number_of_pages = find_number_of_pages(job_soup)
+    number_of_pages = find_number_of_pages_indeed(job_soup)
     job_links = []
 
     for overview_page in range(number_of_pages):
@@ -137,6 +137,7 @@ def press_cookie_decline_jobnet(driver, delay):
 # %%
 
 # selenium pga angular js
+### TODO ###
 from selenium import webdriver
 import time
 from selenium.webdriver.support.ui import WebDriverWait
@@ -149,11 +150,15 @@ options = Options()
 options.headless = True
 driver = webdriver.Firefox(options=options)
 
+def set_url_jobnet():
+    url = 'https://job.jobnet.dk/CV/FindWork?SearchString=%27Data%2520Science%27%2520OR%2520%27data%2520scientist%27&Region=Hovedstaden%2520og%2520Bornholm&WorkHours=Fuldtid&JobAnnouncementType=Almindelige%2520Vilk%25C3%25A5r&Offset=0&SortValue=CreationDate'
+    return(url)
+
+url = set_url_jobnet()
+
 delay = 1 # seconds
 
-driver.get('https://job.jobnet.dk/CV/FindWork?SearchString=%27Data%2520Science%27%2520OR%2520%27data%2520scientist%27&Region=Hovedstaden%2520og%2520Bornholm&WorkHours=Fuldtid&JobAnnouncementType=Almindelige%2520Vilk%25C3%25A5r&Offset=0&SortValue=CreationDate')
-
-
+driver.get(url)
 
 driver = press_cookie_decline_jobnet(driver, delay)
 
@@ -162,17 +167,12 @@ number_of_pages_jobnet = find_number_of_pages_jobnet(driver, delay)
 # henter joboverview-sider
 # henter links til jobs
 
-
-
-
 def get_job_view(jobkey, proxies):
     getVars = {'jk' : jobkey, "vjs" : "3"}
     url = ('https://dk.indeed.com/viewjob?' + urllib.parse.urlencode(getVars))
     page = requests.get(url, proxies=proxies)
     soup = BeautifulSoup(page.content, "html.parser")
     return soup
-
-
 
 driver.close()
 
@@ -181,18 +181,6 @@ driver.close()
 # %%
 
 
-
-job_soup = load_jobnet_jobs_div(job_title, location)
-
-for overview_page in range(number_of_pages):
-    start_page = (overview_page) * 50
-    print(start_page)
-    job_soup = load_indeed_jobs_div(job_title, location, job_type, start_page)
-    job_elems = job_soup.find_all("a", id=re.compile("job_"))
-    for job in job_elems:
-        job_links.append(re.findall(r"data-jk=\"(.[\w]+)",str(job))[0])
-
-soup
 # Set up dockerization
 # Set up github actions regualr run
 # Set up bash script for running
