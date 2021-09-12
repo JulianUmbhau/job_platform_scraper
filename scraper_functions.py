@@ -102,10 +102,16 @@ def scrape_indeed(job_title, location, job_type, proxies): # should be class?
 
     
 # %%
+# selenium pga angular js
+### TODO ###
+from selenium import webdriver
+import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.firefox.options import Options
 
-job_title = "'data science' OR 'data scientist'"
-location = "Hovedstaden og Bornholm"
-Offset = 0
 
 def load_jobnet_jobs_div(job_title, location, Offset=0):
     getVars = {'SearchString' : job_title, 'Region' : location, "WorkHours" : "Fuldtid", "JobAnnouncementType" : "Almindelige Vilkår", "Offset" : Offset, 'SortValue' : 'CreationDate'}
@@ -113,6 +119,7 @@ def load_jobnet_jobs_div(job_title, location, Offset=0):
     page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
     return soup
+
 
 def find_number_of_pages_jobnet(driver, delay):
     time.sleep(delay)
@@ -124,6 +131,7 @@ def find_number_of_pages_jobnet(driver, delay):
     antal_jobopslag = re.findall(r"(\d+) jobopslag", antal_jobopslag_text)
     return(antal_jobopslag)
 
+
 def press_cookie_decline_jobnet(driver, delay):
     try:
         myElem = WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.ID, 'declineButton')))
@@ -133,36 +141,17 @@ def press_cookie_decline_jobnet(driver, delay):
     return(driver)
 
 
+def setup_driver_firefox(headless, firefox_binary):
+    options = Options()
+    options.headless = headless
+    driver = webdriver.Firefox(firefox_binary, options=options)
+    return(driver)
 
-# %%
-
-# selenium pga angular js
-### TODO ###
-from selenium import webdriver
-import time
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.firefox.options import Options
-
-options = Options()
-options.headless = True
-driver = webdriver.Firefox(options=options)
 
 def set_url_jobnet():
     url = 'https://job.jobnet.dk/CV/FindWork?SearchString=%27Data%2520Science%27%2520OR%2520%27data%2520scientist%27&Region=Hovedstaden%2520og%2520Bornholm&WorkHours=Fuldtid&JobAnnouncementType=Almindelige%2520Vilk%25C3%25A5r&Offset=0&SortValue=CreationDate'
     return(url)
 
-url = set_url_jobnet()
-
-delay = 1 # seconds
-
-driver.get(url)
-
-driver = press_cookie_decline_jobnet(driver, delay)
-
-number_of_pages_jobnet = find_number_of_pages_jobnet(driver, delay)
 
 # henter joboverview-sider
 # henter links til jobs
@@ -173,9 +162,6 @@ def get_job_view(jobkey, proxies):
     page = requests.get(url, proxies=proxies)
     soup = BeautifulSoup(page.content, "html.parser")
     return soup
-
-driver.close()
-
 
 
 # %%
