@@ -113,34 +113,6 @@ from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.options import Options
 
 
-def load_jobnet_jobs_div(job_title, location, Offset=0):
-    getVars = {'SearchString' : job_title, 'Region' : location, "WorkHours" : "Fuldtid", "JobAnnouncementType" : "Almindelige Vilkår", "Offset" : Offset, 'SortValue' : 'CreationDate'}
-    url = ('https://job.jobnet.dk/CV/FindWork?' + urllib.parse.urlencode(getVars))
-    page = requests.get(url)
-    soup = BeautifulSoup(page.content, "html.parser")
-    return soup
-
-
-def find_number_of_pages_jobnet(driver, delay):
-    time.sleep(delay)
-    try:
-        WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.CLASS_NAME, 'result-count-label')))
-        antal_jobopslag_text = driver.find_element_by_class_name('result-count-label').text
-    except TimeoutException:
-        print("Loading took too much time!")
-    antal_jobopslag = re.findall(r"(\d+) jobopslag", antal_jobopslag_text)
-    return(antal_jobopslag)
-
-
-def press_cookie_decline_jobnet(driver, delay):
-    try:
-        myElem = WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.ID, 'declineButton')))
-        driver.find_element_by_css_selector('[id="declineButton"]').click()
-    except TimeoutException:
-        print("Loading took too much time!")
-    return(driver)
-
-
 def setup_driver_firefox(headless, firefox_binary):
     options = Options()
     options.headless = headless
@@ -153,18 +125,103 @@ def set_url_jobnet():
     return(url)
 
 
-# henter joboverview-sider
-# henter links til jobs
-
-def get_job_view(jobkey, proxies):
-    getVars = {'jk' : jobkey, "vjs" : "3"}
-    url = ('https://dk.indeed.com/viewjob?' + urllib.parse.urlencode(getVars))
-    page = requests.get(url, proxies=proxies)
+def load_jobnet_jobs_div(job_title, location, Offset=0):
+    getVars = {'SearchString' : job_title, 'Region' : location, "WorkHours" : "Fuldtid", "JobAnnouncementType" : "Almindelige Vilkår", "Offset" : Offset, 'SortValue' : 'CreationDate'}
+    url = ('https://job.jobnet.dk/CV/FindWork?' + urllib.parse.urlencode(getVars))
+    page = requests.get(url)
     soup = BeautifulSoup(page.content, "html.parser")
     return soup
 
 
+def press_cookie_decline_jobnet(driver, delay):
+    try:
+        myElem = WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.ID, 'declineButton')))
+        driver.find_element_by_css_selector('[id="declineButton"]').click()
+    except TimeoutException:
+        print("Loading took too much time!")
+    return(driver)
+
+
+def find_number_of_pages_jobnet(driver, delay):
+    time.sleep(delay)
+    try:
+        WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.CLASS_NAME, 'result-count-label')))
+        antal_jobopslag_text = driver.find_element_by_class_name('result-count-label').text
+    except TimeoutException:
+        print("Loading took too much time!")
+    antal_jobopslag = re.findall(r"(\d+) jobopslag", antal_jobopslag_text)
+    return(antal_jobopslag)
+
+def get_job_ids_from_page(driver):
+    elements = driver.find_elements_by_css_selector("a[class='full-width no-text-overflow ng-isolate-scope']")
+    job_ids = []
+    for link in elements:
+        job_ids.append(link.get_attribute("user-behavior-tracking-id"))
+    return(job_ids)
+
+
+def set_url_jobnet_jobs(job_id):
+    url = "https://job.jobnet.dk/CV/FindWork/Details/" + job_id
+    return(url)
+
+
+
+# henter joboverview-sider
+# henter links til jobs
+
 # %%
+delay = 1
+job_title = '"data science"'
+location = "København"
+job_type = "fulltime"
+proxies = {"http" : "http://50.192.195.69:52018", "http1": "http://62.133.168.72:55443"}
+# %%
+
+driver = setup_driver_firefox(False, ".")
+
+url = set_url_jobnet()
+
+driver.get(url)
+
+press_cookie_decline_jobnet(driver, delay)
+
+antal_jobopslag = find_number_of_pages_jobnet(driver, delay)
+
+# get ids  from more pages
+job_ids = get_job_ids_from_page(driver)
+
+# loop through pages of jobs and get info
+url = set_url_jobnet_jobs(job_ids[0])
+
+driver.get(url)
+
+
+
+
+# %%
+
+
+
+driver.find_element_by_class_name("joblist-result-content").text
+
+
+driver.find_elements_by_class_name("ng-scope")[1].text
+
+driver.find_elements_by_class_name("job-ad-summary")[1].get_attribute("href")
+
+driver.find_elements_by_class_name("job-ad-id ng-binding")
+
+
+driver.find_elements_by_class_name("full-width no-text-overflow ng-isolate-scope")
+
+driver.find_elements_by_css_selector("[aria-label=Jobannonce med ID: 5434869]")
+
+
+
+# %%
+
+driver.close()
+
 
 
 # Set up dockerization
