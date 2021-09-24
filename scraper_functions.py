@@ -152,8 +152,15 @@ def find_number_of_pages_jobnet(driver, delay):
     antal_jobopslag = re.findall(r"(\d+) jobopslag", antal_jobopslag_text)
     return(antal_jobopslag)
 
-def get_job_ids_from_page(driver):
-    elements = driver.find_elements_by_css_selector("a[class='full-width no-text-overflow ng-isolate-scope']")
+
+def get_job_ids_from_page(driver, delay):
+    time.sleep(delay)
+    try:
+        WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.CSS_SELECTOR, "a[class='full-width no-text-overflow ng-isolate-scope']")))
+        elements = driver.find_elements_by_css_selector("a[class='full-width no-text-overflow ng-isolate-scope']")
+    except TimeoutException:
+        print("Loading took too much time!")
+
     job_ids = []
     for link in elements:
         job_ids.append(link.get_attribute("user-behavior-tracking-id"))
@@ -188,13 +195,25 @@ press_cookie_decline_jobnet(driver, delay)
 antal_jobopslag = find_number_of_pages_jobnet(driver, delay)
 
 # get ids  from more pages
-job_ids = get_job_ids_from_page(driver)
+job_ids = get_job_ids_from_page(driver, delay)
 
 # loop through pages of jobs and get info
-url = set_url_jobnet_jobs(job_ids[0])
+jobs_texts = []
+for job_id in job_ids:
+    url = set_url_jobnet_jobs(job_id)
+    driver.get(url)
+    time.sleep(delay)
+    try:
+        WebDriverWait(driver, delay).until(EC.presence_of_element_located((By.CLASS_NAME, "ng-scope")))
+        text = driver.find_elements_by_class_name("ng-scope")[0].text
+    except TimeoutException:
+        print("Loading took too much time!")
+    jobs_texts.append(text)
 
-driver.get(url)
+len(jobs_texts)
 
+# %%
+driver.close()
 
 
 
